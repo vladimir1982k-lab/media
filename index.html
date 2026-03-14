@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
 <title>Media Library</title>
 
@@ -8,7 +9,7 @@
 
 body{
 font-family:Arial;
-background:#f3f3f3;
+background:#f4f4f4;
 padding:40px;
 }
 
@@ -16,11 +17,14 @@ h1{
 margin-bottom:20px;
 }
 
-input{
+.controls{
+margin-bottom:20px;
+}
+
+input,select{
 padding:10px;
-width:300px;
-margin-bottom:30px;
-font-size:16px;
+font-size:14px;
+margin-right:10px;
 }
 
 .grid{
@@ -33,39 +37,38 @@ gap:20px;
 background:white;
 border-radius:10px;
 padding:10px;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
+box-shadow:0 3px 8px rgba(0,0,0,0.1);
 text-align:center;
 }
 
-img{
+img,video{
 width:100%;
 border-radius:6px;
-}
-
-video{
-width:100%;
-border-radius:6px;
-}
-
-button{
-margin-top:8px;
-padding:6px 10px;
-cursor:pointer;
-border:none;
-background:#007bff;
-color:white;
-border-radius:5px;
-}
-
-button:hover{
-background:#0056b3;
 }
 
 .filename{
 font-size:12px;
 margin-top:6px;
-color:#555;
 word-break:break-all;
+}
+
+.buttons{
+margin-top:6px;
+}
+
+button{
+padding:5px 8px;
+font-size:11px;
+margin:2px;
+border:none;
+border-radius:4px;
+background:#007bff;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#0056b3;
 }
 
 </style>
@@ -76,79 +79,155 @@ word-break:break-all;
 
 <h1>Media Library</h1>
 
-<input id="search" placeholder="Search files...">
+<div class="controls">
+
+<input id="search" placeholder="Search">
+
+<select id="sort">
+<option value="name">Sort by name</option>
+<option value="type">Sort by type</option>
+</select>
+
+<select id="category">
+<option value="all">All folders</option>
+</select>
+
+</div>
 
 <div id="media" class="grid"></div>
 
 <script>
 
-const repo = "vladimir1982k-lab/media";
-const branch = "main";
-const domain = "https://img.ickorki.ru";
+const repo="vladimir1982k-lab/media";
+const branch="main";
+const domain="https://img.ickorki.ru";
+
+let allFiles=[];
 
 async function loadFiles(){
 
-const url = `https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
+const url=`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
 
-const response = await fetch(url);
-const data = await response.json();
+const response=await fetch(url);
+const data=await response.json();
 
-const files = data.tree;
-const container = document.getElementById("media");
+allFiles=data.tree.filter(file=>file.path.match(/\.(jpg|jpeg|png|webp|gif|mp4)$/i));
 
-files.forEach(file => {
+populateCategories();
+render();
 
-if(file.path.match(/\.(jpg|jpeg|png|webp|gif|mp4)$/i)){
+}
 
-let card = document.createElement("div");
-card.className = "card";
+function populateCategories(){
 
-let fileUrl = `${domain}/${file.path}`;
+let cats=new Set();
+
+allFiles.forEach(f=>{
+
+let folder=f.path.split("/")[0];
+
+cats.add(folder);
+
+});
+
+const select=document.getElementById("category");
+
+cats.forEach(c=>{
+
+let o=document.createElement("option");
+
+o.value=c;
+
+o.innerText=c;
+
+select.appendChild(o);
+
+});
+
+}
+
+function render(){
+
+const container=document.getElementById("media");
+
+container.innerHTML="";
+
+let search=document.getElementById("search").value.toLowerCase();
+let cat=document.getElementById("category").value;
+let sort=document.getElementById("sort").value;
+
+let files=allFiles.filter(f=>{
+
+if(search && !f.path.toLowerCase().includes(search)) return false;
+
+if(cat!=="all" && !f.path.startsWith(cat)) return false;
+
+return true;
+
+});
+
+files.sort((a,b)=>{
+
+if(sort==="name") return a.path.localeCompare(b.path);
+
+if(sort==="type") return a.path.split(".").pop().localeCompare(b.path.split(".").pop());
+
+});
+
+files.forEach(file=>{
+
+let url=`${domain}/${file.path}`;
+
+let card=document.createElement("div");
+card.className="card";
+
+let media;
 
 if(file.path.endsWith("mp4")){
 
-card.innerHTML = `
-<video controls src="${fileUrl}"></video>
-<div class="filename">${file.path}</div>
-<button onclick="copyLink('${fileUrl}')">Copy link</button>
-`;
+media=`<video controls preload="metadata" src="${url}"></video>`;
 
 }else{
 
-card.innerHTML = `
-<img src="${fileUrl}">
-<div class="filename">${file.path}</div>
-<button onclick="copyLink('${fileUrl}')">Copy link</button>
-`;
+media=`<img loading="lazy" src="${url}">`;
 
 }
+
+card.innerHTML=`
+
+${media}
+
+<div class="filename">${file.path}</div>
+
+<div class="buttons">
+
+<button onclick="copy('${url}')">Copy link</button>
+
+<button onclick="copy('<img src=&quot;${url}&quot;>')">Copy HTML</button>
+
+<button onclick="window.open('${url}')">Open</button>
+
+</div>
+
+`;
 
 container.appendChild(card);
 
-}
-
 });
 
 }
 
-function copyLink(link){
+function copy(text){
 
-navigator.clipboard.writeText(link);
-alert("Link copied");
+navigator.clipboard.writeText(text);
+
+alert("Copied");
 
 }
 
-document.getElementById("search").addEventListener("input",function(){
-
-let filter = this.value.toLowerCase();
-
-document.querySelectorAll(".card").forEach(card=>{
-
-card.style.display = card.innerText.toLowerCase().includes(filter) ? "block" : "none";
-
-});
-
-});
+document.getElementById("search").addEventListener("input",render);
+document.getElementById("sort").addEventListener("change",render);
+document.getElementById("category").addEventListener("change",render);
 
 loadFiles();
 
