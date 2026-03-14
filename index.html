@@ -8,7 +8,7 @@
 
 body{
 font-family:Arial;
-background:#f4f4f4;
+background:#f3f3f3;
 padding:40px;
 }
 
@@ -19,86 +19,106 @@ margin-bottom:20px;
 input{
 padding:10px;
 width:300px;
-margin-bottom:20px;
+margin-bottom:30px;
+font-size:16px;
 }
 
 .grid{
 display:grid;
-grid-template-columns:repeat(auto-fill,200px);
+grid-template-columns:repeat(auto-fill,220px);
 gap:20px;
 }
 
 .card{
 background:white;
+border-radius:10px;
 padding:10px;
-border-radius:8px;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 text-align:center;
 }
 
 img{
 width:100%;
-border-radius:5px;
+border-radius:6px;
 }
 
 video{
 width:100%;
+border-radius:6px;
 }
 
 button{
-margin-top:5px;
+margin-top:8px;
 padding:6px 10px;
 cursor:pointer;
+border:none;
+background:#007bff;
+color:white;
+border-radius:5px;
+}
+
+button:hover{
+background:#0056b3;
+}
+
+.filename{
+font-size:12px;
+margin-top:6px;
+color:#555;
+word-break:break-all;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <h1>Media Library</h1>
 
-<input id="search" placeholder="Search...">
+<input id="search" placeholder="Search files...">
 
 <div id="media" class="grid"></div>
 
 <script>
 
-const repo="username/media";
-const branch="main";
+const repo = "vladimir1982k-lab/media";
+const branch = "main";
+const domain = "https://img.ickorki.ru";
 
 async function loadFiles(){
 
-const url=`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
+const url = `https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
 
-const response=await fetch(url);
+const response = await fetch(url);
+const data = await response.json();
 
-const data=await response.json();
+const files = data.tree;
+const container = document.getElementById("media");
 
-const files=data.tree;
+files.forEach(file => {
 
-const container=document.getElementById("media");
+if(file.path.match(/\.(jpg|jpeg|png|webp|gif|mp4)$/i)){
 
-files.forEach(file=>{
+let card = document.createElement("div");
+card.className = "card";
 
-if(file.path.match(/\.(jpg|png|webp|mp4)$/)){
-
-let card=document.createElement("div");
-card.className="card";
-
-let url=`https://img.site.com/${file.path}`;
+let fileUrl = `${domain}/${file.path}`;
 
 if(file.path.endsWith("mp4")){
 
-card.innerHTML=`
-<video controls src="${url}"></video>
-<button onclick="copy('${url}')">Copy link</button>
+card.innerHTML = `
+<video controls src="${fileUrl}"></video>
+<div class="filename">${file.path}</div>
+<button onclick="copyLink('${fileUrl}')">Copy link</button>
 `;
 
 }else{
 
-card.innerHTML=`
-<img src="${url}">
-<button onclick="copy('${url}')">Copy link</button>
+card.innerHTML = `
+<img src="${fileUrl}">
+<div class="filename">${file.path}</div>
+<button onclick="copyLink('${fileUrl}')">Copy link</button>
 `;
 
 }
@@ -111,21 +131,20 @@ container.appendChild(card);
 
 }
 
-function copy(text){
+function copyLink(link){
 
-navigator.clipboard.writeText(text);
-
+navigator.clipboard.writeText(link);
 alert("Link copied");
 
 }
 
 document.getElementById("search").addEventListener("input",function(){
 
-let filter=this.value.toLowerCase();
+let filter = this.value.toLowerCase();
 
 document.querySelectorAll(".card").forEach(card=>{
 
-card.style.display=card.innerHTML.toLowerCase().includes(filter)?"block":"none";
+card.style.display = card.innerText.toLowerCase().includes(filter) ? "block" : "none";
 
 });
 
