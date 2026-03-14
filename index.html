@@ -70,7 +70,17 @@ const api=`https://api.github.com/repos/${user}/${repo}/contents/${path}`;
 async function loadImages(){
 
 const res=await fetch(api);
-const data=await res.json();
+
+if(!res.ok){
+document.getElementById("gallery").innerHTML="Error loading images";
+return;
+}
+
+<a href="${file.download_url}" target="_blank">
+<img src="${file.download_url}">
+</a>
+
+data.sort((a,b)=>a.name.localeCompare(b.name));
 
 const gallery=document.getElementById("gallery");
 
@@ -82,7 +92,9 @@ const card=document.createElement("div");
 card.className="card";
 
 card.innerHTML=`
+<a href="${file.download_url}" target="_blank">
 <img src="${file.download_url}">
+</a>
 <div class="filename">${file.name}</div>
 `;
 
