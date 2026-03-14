@@ -1,1 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Media Library</title>
 
+<style>
+
+body{
+font-family:Arial;
+background:#f4f4f4;
+padding:40px;
+}
+
+h1{
+margin-bottom:20px;
+}
+
+input{
+padding:10px;
+width:300px;
+margin-bottom:20px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,200px);
+gap:20px;
+}
+
+.card{
+background:white;
+padding:10px;
+border-radius:8px;
+text-align:center;
+}
+
+img{
+width:100%;
+border-radius:5px;
+}
+
+video{
+width:100%;
+}
+
+button{
+margin-top:5px;
+padding:6px 10px;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Media Library</h1>
+
+<input id="search" placeholder="Search...">
+
+<div id="media" class="grid"></div>
+
+<script>
+
+const repo="username/media";
+const branch="main";
+
+async function loadFiles(){
+
+const url=`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
+
+const response=await fetch(url);
+
+const data=await response.json();
+
+const files=data.tree;
+
+const container=document.getElementById("media");
+
+files.forEach(file=>{
+
+if(file.path.match(/\.(jpg|png|webp|mp4)$/)){
+
+let card=document.createElement("div");
+card.className="card";
+
+let url=`https://img.site.com/${file.path}`;
+
+if(file.path.endsWith("mp4")){
+
+card.innerHTML=`
+<video controls src="${url}"></video>
+<button onclick="copy('${url}')">Copy link</button>
+`;
+
+}else{
+
+card.innerHTML=`
+<img src="${url}">
+<button onclick="copy('${url}')">Copy link</button>
+`;
+
+}
+
+container.appendChild(card);
+
+}
+
+});
+
+}
+
+function copy(text){
+
+navigator.clipboard.writeText(text);
+
+alert("Link copied");
+
+}
+
+document.getElementById("search").addEventListener("input",function(){
+
+let filter=this.value.toLowerCase();
+
+document.querySelectorAll(".card").forEach(card=>{
+
+card.style.display=card.innerHTML.toLowerCase().includes(filter)?"block":"none";
+
+});
+
+});
+
+loadFiles();
+
+</script>
+
+</body>
+</html>
