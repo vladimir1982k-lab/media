@@ -1,235 +1,115 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <title>Media Library</title>
 
 <style>
-
 body{
 font-family:Arial;
-background:#f4f4f4;
-padding:40px;
+background:#f5f5f5;
+margin:20px;
 }
 
 h1{
-margin-bottom:20px;
+margin-bottom:10px;
 }
 
-.controls{
-margin-bottom:20px;
-}
-
-input,select{
+#search{
 padding:10px;
-font-size:14px;
-margin-right:10px;
+width:300px;
+font-size:16px;
+margin-bottom:20px;
 }
 
-.grid{
+.gallery{
 display:grid;
-grid-template-columns:repeat(auto-fill,220px);
+grid-template-columns:repeat(auto-fill,200px);
 gap:20px;
 }
 
 .card{
 background:white;
-border-radius:10px;
 padding:10px;
-box-shadow:0 3px 8px rgba(0,0,0,0.1);
+border-radius:10px;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
 text-align:center;
 }
 
-img,video{
+.card img{
 width:100%;
-border-radius:6px;
+height:150px;
+object-fit:cover;
+border-radius:5px;
 }
 
 .filename{
 font-size:12px;
-margin-top:6px;
+margin-top:5px;
 word-break:break-all;
 }
-
-.buttons{
-margin-top:6px;
-}
-
-button{
-padding:5px 8px;
-font-size:11px;
-margin:2px;
-border:none;
-border-radius:4px;
-background:#007bff;
-color:white;
-cursor:pointer;
-}
-
-button:hover{
-background:#0056b3;
-}
-
 </style>
-
 </head>
 
 <body>
 
 <h1>Media Library</h1>
 
-<div class="controls">
+<input id="search" placeholder="Search images...">
 
-<input id="search" placeholder="Search">
-
-<select id="sort">
-<option value="name">Sort by name</option>
-<option value="type">Sort by type</option>
-</select>
-
-<select id="category">
-<option value="all">All folders</option>
-</select>
-
-</div>
-
-<div id="media" class="grid"></div>
+<div class="gallery" id="gallery"></div>
 
 <script>
 
-const repo="vladimir1982k-lab/media";
-const branch="main";
-const domain="https://img.ickorki.ru";
+const user="vladimir1982k";
+const repo="media";
+const path="images";
 
-let allFiles=[];
+const api=`https://api.github.com/repos/${user}/${repo}/contents/${path}`;
 
-async function loadFiles(){
+async function loadImages(){
 
-const url=`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
+const res=await fetch(api);
+const data=await res.json();
 
-const response=await fetch(url);
-const data=await response.json();
+const gallery=document.getElementById("gallery");
 
-allFiles=data.tree.filter(file=>file.path.match(/\.(jpg|jpeg|png|webp|gif|mp4)$/i));
+data.forEach(file=>{
 
-populateCategories();
-render();
+if(file.type==="file"){
 
-}
-
-function populateCategories(){
-
-let cats=new Set();
-
-allFiles.forEach(f=>{
-
-let folder=f.path.split("/")[0];
-
-cats.add(folder);
-
-});
-
-const select=document.getElementById("category");
-
-cats.forEach(c=>{
-
-let o=document.createElement("option");
-
-o.value=c;
-
-o.innerText=c;
-
-select.appendChild(o);
-
-});
-
-}
-
-function render(){
-
-const container=document.getElementById("media");
-
-container.innerHTML="";
-
-let search=document.getElementById("search").value.toLowerCase();
-let cat=document.getElementById("category").value;
-let sort=document.getElementById("sort").value;
-
-let files=allFiles.filter(f=>{
-
-if(search && !f.path.toLowerCase().includes(search)) return false;
-
-if(cat!=="all" && !f.path.startsWith(cat)) return false;
-
-return true;
-
-});
-
-files.sort((a,b)=>{
-
-if(sort==="name") return a.path.localeCompare(b.path);
-
-if(sort==="type") return a.path.split(".").pop().localeCompare(b.path.split(".").pop());
-
-});
-
-files.forEach(file=>{
-
-let url=`${domain}/${file.path}`;
-
-let card=document.createElement("div");
+const card=document.createElement("div");
 card.className="card";
 
-let media;
-
-if(file.path.endsWith("mp4")){
-
-media=`<video controls preload="metadata" src="${url}"></video>`;
-
-}else{
-
-media=`<img loading="lazy" src="${url}">`;
-
-}
-
 card.innerHTML=`
-
-${media}
-
-<div class="filename">${file.path}</div>
-
-<div class="buttons">
-
-<button onclick="copy('${url}')">Copy link</button>
-
-<button onclick="copy('<img src=&quot;${url}&quot;>')">Copy HTML</button>
-
-<button onclick="window.open('${url}')">Open</button>
-
-</div>
-
+<img src="${file.download_url}">
+<div class="filename">${file.name}</div>
 `;
 
-container.appendChild(card);
+gallery.appendChild(card);
+
+}
 
 });
 
 }
 
-function copy(text){
+loadImages();
 
-navigator.clipboard.writeText(text);
+document.getElementById("search").addEventListener("input",function(){
 
-alert("Copied");
+const val=this.value.toLowerCase();
+const cards=document.querySelectorAll(".card");
 
-}
+cards.forEach(card=>{
 
-document.getElementById("search").addEventListener("input",render);
-document.getElementById("sort").addEventListener("change",render);
-document.getElementById("category").addEventListener("change",render);
+const name=card.innerText.toLowerCase();
 
-loadFiles();
+card.style.display=name.includes(val)?"block":"none";
+
+});
+
+});
 
 </script>
 
